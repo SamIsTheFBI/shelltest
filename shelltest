@@ -1,0 +1,60 @@
+#!/bin/sh
+
+curr_shell="$(readlink /proc/$$/exe)"
+username="$(whoami)"
+
+function get_random_cmd_zsh {
+  while true; do
+    local rand="$(tac "${HOME}/.zsh_history" | cut -d ";" -f2- | cut -d " " -f1 | shuf | head -n 1)";
+    [ -z $(command -v "${rand}") ] && continue || break
+  done
+
+  echo "${rand}"
+}
+
+function get_random_cmd_bash {
+  local bool=true
+  while true; do
+    local rand="$(tac "${HOME}/.bash_history" | cut -d " " -f1 | shuf | head -n 5 | shuf | head -n 1)";
+    [ -z $(command -v "${rand}") ] && continue || break
+  done
+
+  echo "${rand}"
+}
+
+case "${curr_shell}" in
+  *zsh | 'zsh' )
+    random_cmd="$(get_random_cmd_zsh)" ;;
+  *bash | 'bash' )
+    random_cmd=$(get_random_cmd_bash) ;;
+  *)
+    echo "Sorry, support for this shell is yet to be added! Please switch to Bash or Zsh to continue."
+    exit 0 ;;
+esac
+
+# echo "${curr_shell} - ${random_cmd}"
+
+echo "Shell Wizard: You have been raided by the shell wizard. Quick, which command am I thinking of?"
+echo "Shell Wizard: I'll give you a hint, it is ${#random_cmd} characters long"
+
+limit=$(( ${#random_cmd} + 1 ))
+# word="⬛"
+# for (( i=2; i<$limit; i++ )); do
+#   word="${word}⬛"
+# done
+#
+# echo "${word}"
+# exit 0
+
+while true; do
+  printf "${username}: " >&2
+  read -r ans
+  limit=$(( limit - 1 ))
+  counter=0
+  for (( i=0; i<${#ans}; i++ )); do
+    var="${ans:$i:1}"
+    [ "${random_cmd:$i:1}" = "${var}" ] && counter=$(( counter + 1 ))
+  done
+  [ $limit -eq 0 ] && echo "You lose" && break
+  [ $counter -eq ${#random_cmd} ] && echo "You win" && break
+done
