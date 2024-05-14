@@ -12,11 +12,15 @@ green_fg="\033[0;32m"
 yellow_fg="\033[0;33m"
 normal_fg="\033[0m"
 
-print_center() {
-  text="${1}"
+print_ascii_art() {
+  printf "%s\n\n" "███████╗██╗  ██╗███████╗██╗     ██╗  ████████╗███████╗███████╗████████╗
+██╔════╝██║  ██║██╔════╝██║     ██║  ╚══██╔══╝██╔════╝██╔════╝╚══██╔══╝
+███████╗███████║█████╗  ██║     ██║     ██║   █████╗  ███████╗   ██║   
+╚════██║██╔══██║██╔══╝  ██║     ██║     ██║   ██╔══╝  ╚════██║   ██║   
+███████║██║  ██║███████╗███████╗███████╗██║   ███████╗███████║   ██║   
+╚══════╝╚═╝  ╚═╝╚══════╝╚══════╝╚══════╝╚═╝   ╚══════╝╚══════╝   ╚═╝   "
 
-  term_cols=$(tput cols) 
-  printf "%*s\n" $((( ${#text}+${term_cols} ) / 2 )) "${text}"
+  printf "%s\n\n" "By Shivam Shekhar Soy // SamIsTheFBI"
 }
 
 get_random_cmd_zsh() {
@@ -69,7 +73,7 @@ validate_wordle () {
     temp_wordle="${temp_wordle}-"
   done
 
-  wordle="$(printf "%s\n%s" ${wordle} ${temp_wordle})"
+  wordle="$(printf "%s\n%s\n" ${wordle} ${temp_wordle})"
 }
 
 init_wordle () {
@@ -86,24 +90,27 @@ make_wordle () {
 
 render_wordle () {
   clear
-  # echo "${curr_shell} - ${random_cmd}"
+  print_ascii_art
   hint="$(type ${random_cmd})"
   case "${hint}" in
     *"is an alias for"*) 
       hint="It is an alias for a command you were too lazy to type every time." ;;
-    *)
+    *"/bin/"*)
       hint="It is an executable (very helpful hint)" ;;
+    *"is a shell"*)
+      hint="It is a shell keyword. Maybe brush up your shell scripting & then come back :)" ;;
   esac
 
-  echo "Hint #1: ${hint}"
-  echo "Hint #2: It is ${#random_cmd} characters long (super helpful hint)"
+  printf "%s\n\n" "Does the terminal command you, or do you command the terminal? Let's find out... in the ultimate showdown of man versus machine! Guess the command based on the following hints & prove your worth, ${username}!"
+  printf "%s\n" "Hint #1: It is ${#random_cmd} characters long (super helpful hint)"
+  printf "%s\n\n" "Hint #2: ${hint}"
 
   for (( i=0; i<${#wordle}; i=i+1 )); do
     wordle_char="${wordle:$i:1}"
     printf "%s" "${wordle_char}"
   done
 
-  printf "\n"
+  printf "\n\n"
 }
 
 get_random_cmd () {
