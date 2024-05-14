@@ -2,8 +2,24 @@
 
 curr_shell="$(readlink /proc/$$/exe)"
 username="$(whoami)"
+limit=0
+random_cmd=""
+cmd_string=""
+wordle=""
+temp_wordle=""
+red_fg="\033[0;31m"
+green_fg="\033[0;32m"
+yellow_fg="\033[0;33m"
+normal_fg="\033[0m"
 
-function get_random_cmd_zsh {
+print_center() {
+  text="${1}"
+
+  term_cols=$(tput cols) 
+  printf "%*s\n" $((( ${#text}+${term_cols} ) / 2 )) "${text}"
+}
+
+get_random_cmd_zsh() {
   while true; do
     local rand="$(tac "${HOME}/.zsh_history" | cut -d ";" -f2- | cut -d " " -f1 | shuf | head -n 1)";
     [ -z $(command -v "${rand}") ] && continue || break
@@ -12,8 +28,7 @@ function get_random_cmd_zsh {
   echo "${rand}"
 }
 
-function get_random_cmd_bash {
-  local bool=true
+get_random_cmd_bash() {
   while true; do
     local rand="$(tac "${HOME}/.bash_history" | cut -d " " -f1 | shuf | head -n 5 | shuf | head -n 1)";
     [ -z $(command -v "${rand}") ] && continue || break
@@ -22,39 +37,118 @@ function get_random_cmd_bash {
   echo "${rand}"
 }
 
-case "${curr_shell}" in
-  *zsh | 'zsh' )
-    random_cmd="$(get_random_cmd_zsh)" ;;
-  *bash | 'bash' )
-    random_cmd=$(get_random_cmd_bash) ;;
-  *)
-    echo "Sorry, support for this shell is yet to be added! Please switch to Bash or Zsh to continue."
-    exit 0 ;;
-esac
+validate_wordle () {
+  temp_len="${#temp_wordle}"
+  main_len="${#random_cmd}"
 
-# echo "${curr_shell} - ${random_cmd}"
+  unfilled=$(( main_len - temp_len ))
 
-echo "Shell Wizard: You have been raided by the shell wizard. Quick, which command am I thinking of?"
-echo "Shell Wizard: I'll give you a hint, it is ${#random_cmd} characters long"
+  new_tmp=""
+  for (( i=0; i<${temp_len}; i=i+1 )); do
+    tmp_letter="${temp_wordle:$i:1}"
+    rnd_letter="${random_cmd:$i:1}"
 
-limit=$(( ${#random_cmd} + 1 ))
-# word="⬛"
-# for (( i=2; i<$limit; i++ )); do
-#   word="${word}⬛"
-# done
-#
-# echo "${word}"
-# exit 0
+    inc=0
+    for (( j=0; j<${main_len}; j=j+1 )); do
+      dunno="${random_cmd:$j:1}"
+      [ "${tmp_letter}" = "${dunno}" ] && inc=1 && break
+    done
 
-while true; do
-  printf "${username}: " >&2
-  read -r ans
-  limit=$(( limit - 1 ))
-  counter=0
-  for (( i=0; i<${#ans}; i++ )); do
-    var="${ans:$i:1}"
-    [ "${random_cmd:$i:1}" = "${var}" ] && counter=$(( counter + 1 ))
+    if [ "${tmp_letter}" = "${rnd_letter}" ]; then
+      new_tmp="$(printf "%s${green_fg}%s${normal_fg}" "${new_tmp}" "${rnd_letter}")"
+    elif [[ $inc -gt 0 ]]; then
+      new_tmp="$(printf "%s${yellow_fg}%s${normal_fg}" "${new_tmp}" "${tmp_letter}")"
+    else
+      new_tmp="$(printf "%s%s" "${new_tmp}" "${tmp_letter}")"
+    fi
   done
-  [ $limit -eq 0 ] && echo "You lose" && break
-  [ $counter -eq ${#random_cmd} ] && echo "You win" && break
-done
+
+  temp_wordle="${new_tmp}"
+
+  for (( i=0; i<${unfilled}; i=i+1 )); do
+    temp_wordle="${temp_wordle}-"
+  done
+
+  wordle="$(printf "%s\n%s" ${wordle} ${temp_wordle})"
+}
+
+init_wordle () {
+  for (( i=0; i<${#random_cmd}; i=i+1 )); do
+    wordle="${wordle}-"
+  done
+}
+
+make_wordle () {
+  letter="${1}"
+
+  temp_wordle="${temp_wordle}${letter}"
+}
+
+render_wordle () {
+  clear
+  # echo "${curr_shell} - ${random_cmd}"
+  hint="$(type ${random_cmd})"
+  case "${hint}" in
+    *"is an alias for"*) 
+      hint="It is an alias for a command you were too lazy to type every time." ;;
+    *)
+      hint="It is an executable (very helpful hint)" ;;
+  esac
+
+  echo "Hint #1: ${hint}"
+  echo "Hint #2: It is ${#random_cmd} characters long (super helpful hint)"
+
+  for (( i=0; i<${#wordle}; i=i+1 )); do
+    wordle_char="${wordle:$i:1}"
+    printf "%s" "${wordle_char}"
+  done
+
+  printf "\n"
+}
+
+get_random_cmd () {
+  case "${curr_shell}" in
+    *zsh | 'zsh' )
+      random_cmd="$(get_random_cmd_zsh)" ;;
+    *bash | 'bash' )
+      random_cmd=$(get_random_cmd_bash) ;;
+    *)
+      echo "Sorry, support for this shell is yet to be added! Please switch to Bash or Zsh to continue."
+      exit 0 ;;
+  esac
+
+  limit=$(( ${#random_cmd} + 1 ))
+  cmd_string="$(print_center "${random_cmd}")"
+}
+
+main() {
+  while true; do
+    render_wordle
+    [ $limit -eq 0 ] \
+      && printf "${red_fg}%s${normal_fg}\nThe correct answer is ${green_fg}%s${normal_fg}\n" \
+      "You lose" "${random_cmd}" \
+      && break
+
+    printf "Enter: " >&2
+    read -r ans
+    
+    limit=$(( limit - 1 ))
+    
+    counter=0
+    temp_wordle=""
+    for (( i=0; i<${#ans}; i++ )); do
+      var="${ans:$i:1}"
+      make_wordle "${var}"
+      if [ "${random_cmd:$i:1}" = "${var}" ]; then
+        counter=$(( counter + 1 ))
+      fi
+    done
+    validate_wordle
+    render_wordle
+    [ $counter -eq ${#random_cmd} ] && echo "You win" && break
+  done
+}
+
+get_random_cmd
+init_wordle
+main
