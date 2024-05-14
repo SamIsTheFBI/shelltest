@@ -101,7 +101,7 @@ render_wordle () {
       hint="It is a shell keyword. Maybe brush up your shell scripting & then come back :)" ;;
   esac
 
-  printf "%s\n\n" "Does the terminal command you, or do you command the terminal? Let's find out... in the ultimate showdown of man versus machine! Guess the command based on the following hints & prove your worth, ${username}!"
+  printf "%s\n%s\n\n" "Does the terminal command you, or do you command the terminal? Let's find out... in the ultimate showdown of man versus machine!" "Guess the command based on the following hints & prove your worth, ${username}!"
   printf "%s\n" "Hint #1: It is ${#random_cmd} characters long (super helpful hint)"
   printf "%s\n\n" "Hint #2: ${hint}"
 
