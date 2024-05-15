@@ -24,7 +24,7 @@ print_ascii_art() {
 
 get_random_cmd_zsh() {
   while true; do
-    rand="$(tac "${HOME}/.zsh_history" | cut -d ";" -f2- | cut -d " " -f1 | shuf | head -n 1)";
+    rand="$(tac "${HOME}/.zsh_history" | cut -d ";" -f2- | cut -d " " -f1 | shuf | uniq | head -n 5 | shuf | head -n 1)";
     [ -z "$(command -v "${rand}")" ] && continue
     break
   done
@@ -34,7 +34,7 @@ get_random_cmd_zsh() {
 
 get_random_cmd_bash() {
   while true; do
-    rand="$(tac "${HOME}/.bash_history" | cut -d " " -f1 | shuf | head -n 5 | shuf | head -n 1)";
+    rand="$(tac "${HOME}/.bash_history" | cut -d " " -f1 | shuf | uniq | head -n 5 | shuf | head -n 1)";
     [ -z "$(command -v "${rand}")" ] && continue
     break
   done
